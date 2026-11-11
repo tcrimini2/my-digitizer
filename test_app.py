@@ -7,7 +7,9 @@ from digitizer import (
     calibration_is_valid,
     csv_bytes,
     data_to_pixel,
+    draw_view,
     load_uploaded_image,
+    new_calibration,
     new_dataset,
     pixel_to_data,
 )
@@ -85,6 +87,14 @@ class CalibrationTests(unittest.TestCase):
         loaded = load_uploaded_image(buffer.getvalue())
         self.assertEqual(loaded.mode, "RGB")
         self.assertEqual(loaded.size, (20, 10))
+
+    def test_zoom_keeps_viewer_size_while_changing_crop(self):
+        image = Image.new("RGB", (800, 400), color="white")
+        calibration = new_calibration()
+        normal_view, normal_crop = draw_view(image, [], calibration, 1, 50, 50, 1600)
+        zoomed_view, zoomed_crop = draw_view(image, [], calibration, 2, 50, 50, 1600)
+        self.assertEqual(normal_view.size, zoomed_view.size)
+        self.assertNotEqual(normal_crop, zoomed_crop)
 
     def test_dataset_colors_do_not_repeat_after_initial_palette(self):
         colors = {new_dataset(number)["color"] for number in range(1, 12)}

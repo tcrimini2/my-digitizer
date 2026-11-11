@@ -42,6 +42,7 @@ if "datasets" not in st.session_state:
     st.session_state.last_click_event = None
     st.session_state.image_id = None
     st.session_state.image_bytes = None
+    st.session_state.zoom_factor = 1.0
 
 with st.sidebar:
     st.header("1. Graph image")
@@ -67,6 +68,7 @@ with st.sidebar:
             st.session_state.next_dataset_number = 2
             st.session_state.active_dataset = "dataset-1"
             st.session_state.last_click_event = None
+            st.session_state.zoom_factor = 1.0
 
     st.header("2. Axis settings")
     x_label = st.text_input("X-axis label", value="x", key="x_label")
@@ -169,8 +171,14 @@ else:
 
 viewer_columns = st.columns([3, 1])
 with viewer_columns[1]:
-    zoom = st.slider("Zoom", min_value=1.0, max_value=5.0, value=1.0, step=0.25)
-    display_width = st.slider("Viewer width (pixels)", 500, 1400, 1000, step=100)
+    zoom = st.slider(
+        "Zoom",
+        min_value=1.0,
+        max_value=5.0,
+        value=1.0,
+        step=0.25,
+        key="zoom_factor",
+    )
     if zoom > 1:
         pan_x = st.slider("Pan horizontally", 0, 100, 50)
         pan_y = st.slider("Pan vertically", 0, 100, 50)
@@ -178,6 +186,7 @@ with viewer_columns[1]:
         pan_x = 50
         pan_y = 50
 
+display_width = 1600
 view_image, crop_box = draw_view(
     source_image,
     st.session_state.datasets,
@@ -189,7 +198,11 @@ view_image, crop_box = draw_view(
 )
 
 with viewer_columns[0]:
-    click_value = streamlit_image_coordinates(view_image, key="graph_click_area")
+    click_value = streamlit_image_coordinates(
+        view_image,
+        width="stretch",
+        key="graph_click_area",
+    )
 
 if click_value is not None:
     click_x = click_value.get("x")

@@ -34,7 +34,7 @@ The same commands work with another supported Python by creating its environment
 1. Upload a graph image in the sidebar.
 2. Choose axis labels, scales, and the values at the axis intersection and reference ticks.
 3. Set the origin, X reference, and Y reference by selecting each calibration button and clicking the corresponding location on the image.
-4. Click the image to add points to the active dataset. Add, rename, select, or delete datasets in the sidebar.
+4. The image automatically fits the viewer width after upload. Adjust **Zoom** to inspect details and use **Pan** to move around a zoomed image. Click the image to add points to the active dataset. Add, rename, select, or delete datasets in the sidebar.
 5. Undo points or edit their values in the table; edited values update the image markers.
 6. Download all datasets as CSV. Each dataset occupies two columns; the first row contains dataset names and the second row contains axis labels.
 
