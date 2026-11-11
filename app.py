@@ -11,9 +11,12 @@ from digitizer import (
     csv_bytes,
     data_to_pixel,
     draw_view,
+    get_complete_calibration,
     load_uploaded_image,
+    new_calibration,
     new_dataset,
     pixel_to_data,
+    set_calibration_point,
 )
 
 
@@ -34,11 +37,7 @@ if "datasets" not in st.session_state:
     st.session_state.datasets = [new_dataset(1)]
     st.session_state.next_dataset_number = 2
     st.session_state.active_dataset = "dataset-1"
-    st.session_state.calibration = {
-        "origin": None,
-        "x_reference": None,
-        "y_reference": None,
-    }
+    st.session_state.calibration = new_calibration()
     st.session_state.calibration_mode = None
     st.session_state.last_click_event = None
     st.session_state.image_id = None
@@ -62,11 +61,7 @@ with st.sidebar:
                 st.stop()
             st.session_state.image_id = image_id
             st.session_state.image_bytes = uploaded_bytes
-            st.session_state.calibration = {
-                "origin": None,
-                "x_reference": None,
-                "y_reference": None,
-            }
+            st.session_state.calibration = new_calibration()
             st.session_state.calibration_mode = None
             st.session_state.datasets = [new_dataset(1)]
             st.session_state.next_dataset_number = 2
@@ -160,11 +155,7 @@ for column, (key, label) in zip(calibration_buttons, calibration_targets):
             st.session_state.calibration_mode = key
 with calibration_buttons[3]:
     if st.button("Reset calibration"):
-        st.session_state.calibration = {
-            "origin": None,
-            "x_reference": None,
-            "y_reference": None,
-        }
+        st.session_state.calibration = new_calibration()
         st.session_state.calibration_mode = None
         st.rerun()
 
@@ -219,7 +210,9 @@ if click_value is not None:
             )
             st.session_state.last_click_event = event_id
             if st.session_state.calibration_mode:
-                st.session_state.calibration[st.session_state.calibration_mode] = image_point
+                set_calibration_point(
+                    calibration, st.session_state.calibration_mode, image_point
+                )
                 st.session_state.calibration_mode = None
                 st.rerun()
             elif calibrated:
@@ -230,7 +223,8 @@ if click_value is not None:
                 st.warning("Calibrate the graph before adding data points.")
 
 calibrated = calibration_is_valid(calibration, axis_values, scales)
-if calibrated:
+complete_calibration = get_complete_calibration(calibration)
+if calibrated and complete_calibration is not None:
     st.subheader("Digitized points")
     dataset_columns = st.columns([1, 1, 3])
     with dataset_columns[0]:
@@ -242,7 +236,7 @@ if calibrated:
         st.write(f"{len(active_dataset['points'])} point(s) in {active_dataset['name']}")
 
     points = [
-        pixel_to_data(point, calibration, axis_values, scales)
+        pixel_to_data(point, complete_calibration, axis_values, scales)
         for point in active_dataset["points"]
     ]
     editor_data = pd.DataFrame(points, columns=["x", "y"])
@@ -264,7 +258,13 @@ if calibrated:
             continue
         try:
             edited_points.append(
-                data_to_pixel(float(row[0]), float(row[1]), calibration, axis_values, scales)
+                data_to_pixel(
+                    float(row[0]),
+                    float(row[1]),
+                    complete_calibration,
+                    axis_values,
+                    scales,
+                )
             )
         except ValueError as error:
             st.error(f"That table value cannot be used with the selected axis scales: {error}")
@@ -284,7 +284,7 @@ if calibrated:
         st.session_state.datasets,
         x_label,
         y_label,
-        calibration,
+        complete_calibration,
         axis_values,
         scales,
     )

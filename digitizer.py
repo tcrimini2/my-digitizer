@@ -2,9 +2,21 @@ import csv
 import colorsys
 import io
 import math
-from typing import Any
+from typing import Any, TypedDict
 
 from PIL import Image, ImageDraw, ImageOps
+
+
+class Calibration(TypedDict):
+    origin: tuple[float, float] | None
+    x_reference: tuple[float, float] | None
+    y_reference: tuple[float, float] | None
+
+
+class CompleteCalibration(TypedDict):
+    origin: tuple[float, float]
+    x_reference: tuple[float, float]
+    y_reference: tuple[float, float]
 
 
 COLORS = [
@@ -17,6 +29,40 @@ COLORS = [
     "#168C9B",
     "#697386",
 ]
+
+
+def new_calibration() -> Calibration:
+    return {
+        "origin": None,
+        "x_reference": None,
+        "y_reference": None,
+    }
+
+
+def get_complete_calibration(calibration: Calibration) -> CompleteCalibration | None:
+    origin = calibration["origin"]
+    x_reference = calibration["x_reference"]
+    y_reference = calibration["y_reference"]
+    if origin is None or x_reference is None or y_reference is None:
+        return None
+    return {
+        "origin": origin,
+        "x_reference": x_reference,
+        "y_reference": y_reference,
+    }
+
+
+def set_calibration_point(
+    calibration: Calibration, key: str, point: tuple[float, float]
+) -> None:
+    if key == "origin":
+        calibration["origin"] = point
+    elif key == "x_reference":
+        calibration["x_reference"] = point
+    elif key == "y_reference":
+        calibration["y_reference"] = point
+    else:
+        raise ValueError(f"Unknown calibration point: {key}")
 
 
 def new_dataset(number: int) -> dict[str, Any]:
@@ -46,7 +92,7 @@ def transformed_value(value: float, scale: str) -> float:
 def data_to_pixel(
     x: float,
     y: float,
-    calibration: dict[str, tuple[float, float]],
+    calibration: CompleteCalibration,
     axis_values: dict[str, tuple[float, float]],
     scales: dict[str, str],
 ) -> tuple[float, float]:
@@ -71,7 +117,7 @@ def data_to_pixel(
 
 def pixel_to_data(
     pixel: tuple[float, float],
-    calibration: dict[str, tuple[float, float]],
+    calibration: CompleteCalibration,
     axis_values: dict[str, tuple[float, float]],
     scales: dict[str, str],
 ) -> tuple[float, float]:
@@ -97,7 +143,7 @@ def pixel_to_data(
 
 
 def calibration_is_valid(
-    calibration: dict[str, tuple[float, float] | None],
+    calibration: Calibration,
     axis_values: dict[str, tuple[float, float]],
     scales: dict[str, str],
 ) -> bool:
@@ -127,7 +173,7 @@ def csv_bytes(
     datasets: list[dict[str, Any]],
     x_label: str,
     y_label: str,
-    calibration: dict[str, tuple[float, float]],
+    calibration: CompleteCalibration,
     axis_values: dict[str, tuple[float, float]],
     scales: dict[str, str],
 ) -> bytes:
@@ -160,7 +206,7 @@ def load_uploaded_image(uploaded_bytes: bytes) -> Image.Image:
 def draw_view(
     image: Image.Image,
     datasets: list[dict[str, Any]],
-    calibration: dict[str, tuple[float, float] | None],
+    calibration: Calibration,
     zoom: float,
     pan_x: int,
     pan_y: int,
